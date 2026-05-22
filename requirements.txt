@@ -1,0 +1,25 @@
+# Веб-фреймворк и сервер
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+
+# Работа с БД
+sqlalchemy>=2.0.35
+
+# Шаблонизатор для HTML-ответов
+jinja2>=3.1.4
+
+# Обязательно для File / UploadFile / Form в FastAPI
+python-multipart>=0.0.9
+
+# Генерация Word-документов (подразумевается по модулю docx_generator)
+python-docx>=1.1.0
+
+# === Драйвер базы данных (раскомментируйте нужный) ===
+# aiosqlite>=0.21.0          # для SQLite (асинхронный)
+# psycopg2-binary>=2.9.9     # для PostgreSQL
+# pymysql>=1.1.1             # для MySQL / MariaDB
+# cx_Oracle>=8.3.0           # для Oracle
+
+# === Опционально, но рекомендуется ===
+# alembic>=1.14.0            # если используете миграции SQLAlchemy
+# python-dotenv>=1.0.1       # если загружаете конфиги из .env
