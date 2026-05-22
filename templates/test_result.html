@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Результат испытания{% endblock %}
+{% block page_title %}Результат испытания{% endblock %}
+{% block breadcrumb %}Главная / Испытания / Резюльтат{% endblock %}
+{% block topbar_actions %}
+  <a href="/product/{{ product_id }}/test_act/{{ test_run.id }}" class="btn btn-dl">📄 Акт испытаний .docx</a>
+  <a href="/product/{{ product_id }}/test_simulate" class="btn btn-outline">↩ Ещё испытание</a>
+  <a href="/assets/{{ product_id }}" class="btn btn-outline">← К изделию</a>
+{% endblock %}
+
+{% block content %}
+<div class="{% if all_within %}verdict verdict-ok{% else %}verdict verdict-fail{% endif %}">
+  {% if all_within %}
+    ✅ ИСПЫТАНИЯ ПРОЙДЕНЫ УСПЕШНО — Сценарий «{{ scenario.name }}»
+  {% else %}
+    ❌ ИСПЫТАНИЯ НЕ ПРОЙДЕНЫ — Обнаружены отклонения от допусков
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">📡 Телеметрические данные ({{ telemetry_points|length }} точек)</span>
+    <div>
+      {% set passed_count = telemetry_points | selectattr(2) | list | length %}
+      <span class="badge badge-ok">✓ {{ passed_count }} в норме</span>
+      {% set failed_count = telemetry_points | length - passed_count %}
+      {% if failed_count > 0 %}
+        <span class="badge badge-fail">✗ {{ failed_count }} отклонений</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Параметр</th><th>Значение</th><th>Допуск</th><th>Статус</th></tr></thead>
+      <tbody>
+        {% set limits = scenario.limits %}
+        {% for param, value, within in telemetry_points %}
+        <tr style="{% if not within %}background:#fff5f5{% endif %}">
+          <td>{{ loop.index }}</td>
+          <td>{{ param }}</td>
+          <td><strong>{{ "%.3f"|format(value) }}</strong></td>
+          <td style="font-size:12px;color:#6b7280">
+            {% if param == 'vibration' %}≤ {{ limits.vibration.max }}
+            {% elif param == 'temperature' %}{{ limits.temperature.min }} … {{ limits.temperature.max }} °C
+            {% elif param == 'ems' %}≤ {{ limits.ems.max }}
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if within %}
+              <span class="badge badge-ok">✓ Норма</span>
+            {% else %}
+              <span class="badge badge-fail">✗ Отклонение</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">📋 Информация о прогоне</span></div>
+  <div class="grid-2">
+    <table>
+      <tr><td style="color:#6b7280">Изделие</td><td>{{ product.name }}</td></tr>
+      <tr><td style="color:#6b7280">Серийный номер</td><td>{{ product.serial_number }}</td></tr>
+      <tr><td style="color:#6b7280">Сценарий</td><td>{{ scenario.name }}</td></tr>
+      <tr><td style="color:#6b7280">Начало</td><td>{{ test_run.started_at.strftime('%d.%m.%Y %H:%M:%S') if test_run.started_at else '—' }}</td></tr>
+      <tr><td style="color:#6b7280">Окончание</td><td>{{ test_run.finished_at.strftime('%H:%M:%S') if test_run.finished_at else '—' }}</td></tr>
+    </table>
+    <div>
+      <a href="/product/{{ product_id }}/test_act/{{ test_run.id }}" class="btn btn-dl" style="width:100%;justify-content:center;margin-bottom:8px">
+        📄 Скачать акт испытаний (.docx)
+      </a>
+      <a href="/product/{{ product_id }}/summary_report" class="btn btn-outline" style="width:100%;justify-content:center">
+        📋 Сводный отчёт по изделию (.docx)
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

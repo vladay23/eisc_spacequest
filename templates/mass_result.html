@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Результат расчёта МИХ{% endblock %}
+{% block page_title %}Результат расчёта МИХ{% endblock %}
+{% block breadcrumb %}Изделия / Изделие / Резюльтат МИХ{% endblock %}
+{% block topbar_actions %}
+  <a href="/product/{{ product_id }}/mass_report/{{ log_id }}" class="btn btn-dl">📄 Скачать отчёт .docx</a>
+  <a href="/product/{{ product_id }}/mass_simulate" class="btn btn-outline">↩ Новый расчёт</a>
+  <a href="/assets/{{ product_id }}" class="btn btn-outline">← К изделию</a>
+{% endblock %}
+
+{% block content %}
+<div class="{% if within %}verdict verdict-ok{% else %}verdict verdict-fail{% endif %}">
+  {% if within %}
+    ✅ СООТВЕТСТВУЕТ ДОПУСКАМ — КОНФИГУРАЦИЯ РАЗРЕШЕНА К ПЕРЕДАЧЕ В ПРОИЗВОДСТВО
+  {% else %}
+    ❌ НЕ СООТВЕТСТВУЕТ ДОПУСКАМ — ПЕРЕДАЧА В ПРОИЗВОДСТВО ЗАБЛОКИРОВАНА
+  {% endif %}
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Массово-инерционные характеристики</span></div>
+    <table>
+      <thead><tr><th>Параметр</th><th>Значение</th><th>Допуск</th><th>Статус</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Масса (сухая)</td>
+          <td><strong>{{ "%.4f"|format(mass) }} кг</strong></td>
+          <td>28.5 — 31.5 кг</td>
+          <td>
+            {% if mass >= 28.5 and mass <= 31.5 %}
+              <span class="badge badge-ok">✓ Норма</span>
+            {% else %}
+              <span class="badge badge-fail">✗ Превышение</span>
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td>Центр масс X</td>
+          <td>{{ "%.4f"|format(cg_x) }} м</td>
+          <td>|ΔX| &lt; 0.05 м</td>
+          <td>{% if cg_x|abs < 0.05 %}<span class="badge badge-ok">✓</span>{% else %}<span class="badge badge-fail">✗</span>{% endif %}</td>
+        </tr>
+        <tr>
+          <td>Центр масс Y</td>
+          <td>{{ "%.4f"|format(cg_y) }} м</td>
+          <td>|ΔY| &lt; 0.05 м</td>
+          <td>{% if cg_y|abs < 0.05 %}<span class="badge badge-ok">✓</span>{% else %}<span class="badge badge-fail">✗</span>{% endif %}</td>
+        </tr>
+        <tr>
+          <td>Центр масс Z</td>
+          <td>{{ "%.4f"|format(cg_z) }} м</td>
+          <td>|ΔZ| &lt; 0.05 м</td>
+          <td>{% if cg_z|abs < 0.05 %}<span class="badge badge-ok">✓</span>{% else %}<span class="badge badge-fail">✗</span>{% endif %}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Параметры расчёта</span></div>
+    <table>
+      <tr><td style="color:#6b7280">Материал</td><td><strong>{{ material }}</strong></td></tr>
+      <tr><td style="color:#6b7280">Изделие</td><td>{{ product.name }}</td></tr>
+      <tr><td style="color:#6b7280">Серийный номер</td><td>{{ product.serial_number }}</td></tr>
+    </table>
+    <div class="mt-3">
+      <a href="/product/{{ product_id }}/mass_report/{{ log_id }}" class="btn btn-dl" style="width:100%;justify-content:center">
+        📄 Скачать отчёт Word (.docx)
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

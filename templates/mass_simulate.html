@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Расчёт МИХ — {{ product.name }}{% endblock %}
+{% block page_title %}Управление компановкой{% endblock %}
+{% block breadcrumb %}Изделия / Изделие / Расчет МИХ{% endblock %}
+{% block topbar_actions %}
+  <a href="/assets/{{ product.id }}" class="btn btn-outline">← К изделию</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Параметры расчёта</span></div>
+    <div class="alert alert-info">
+      <strong>Изделие:</strong> {{ product.name }} &nbsp;|&nbsp; <strong>С/Н:</strong> {{ product.serial_number }}
+    </div>
+    <form method="post" action="/product/{{ product.id }}/mass_simulate">
+      <div class="form-group">
+        <label>Материал</label>
+        <select name="material">
+          <option value="aluminum">Алюминий (2700 кг/м³)</option>
+          <option value="titanium">Титан (4500 кг/м³)</option>
+          <option value="composite">Композит (1600 кг/м³)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Объём изделия, м³</label>
+        <input type="number" name="volume" step="0.000001" value="0.011111" required>
+        <div class="form-hint">Рекомендуемое значение для 30 кг из алюминия: ≈ 0.011111 м³</div>
+      </div>
+      <div class="grid-3">
+        <div class="form-group">
+          <label>ЦМ по X, м</label>
+          <input type="number" name="cg_x" step="0.0001" value="0.01">
+        </div>
+        <div class="form-group">
+          <label>ЦМ по Y, м</label>
+          <input type="number" name="cg_y" step="0.0001" value="0.02">
+        </div>
+        <div class="form-group">
+          <label>ЦМ по Z, м</label>
+          <input type="number" name="cg_z" step="0.0001" value="0.01">
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <strong>Нормативные допуски:</strong><br>
+        Масса: 30.0 кг ±5% (28.5 — 31.5 кг)<br>
+        ЦМ: |X|, |Y|, |Z| &lt; 0.05 м
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">⚖️ Рассчитать МИХ</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">История расчётов</span></div>
+    {% if mass_logs %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Дата</th><th>Масса</th><th>Статус</th><th>Отчёт</th></tr></thead>
+        <tbody>
+          {% for ml in mass_logs %}
+          <tr>
+            <td>{{ ml.checked_at.strftime('%d.%m %H:%M') if ml.checked_at else '—' }}</td>
+            <td>{{ "%.3f"|format(ml.mass_kg) }} кг</td>
+            <td>{% if ml.within_tolerance %}<span class="badge badge-ok">✓</span>{% else %}<span class="badge badge-fail">✗</span>{% endif %}</td>
+            <td><a href="/product/{{ product.id }}/mass_report/{{ ml.id }}" class="btn btn-dl btn-sm">📄 .docx</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#9ca3af;text-align:center;padding:30px">Расчётов ещё нет</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

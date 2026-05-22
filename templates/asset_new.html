@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Новое изделие — ЕИС SpaceQuest{% endblock %}
+{% block page_title %}Новое изделие{% endblock %}
+
+{% block breadcrumb %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Главная</a></li>
+      <li class="breadcrumb-item"><a href="/assets">Изделия</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Новое изделие</li>
+    </ol>
+  </nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Регистрация нового изделия</h5>
+      </div>
+      
+      <div class="card-body">
+        {% if error %}
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ error }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endif %}
+
+        {% if success %}
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ success }}
+            {% if product_id %}
+              <br><a href="/assets/{{ product_id }}" class="btn btn-sm btn-success mt-2">🔍 Открыть карточку изделия</a>
+            {% endif %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endif %}
+
+        <form method="POST" action="/assets/new">
+          <div class="mb-3">
+            <label for="serial_number" class="form-label fw-bold">Серийный номер <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="serial_number" name="serial_number" required 
+                   placeholder="Например: SPC-004" pattern="[A-Za-z0-9\-]+" title="Только буквы, цифры и дефисы">
+            <div class="form-text">Уникальный идентификатор изделия в системе учёта</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="name" class="form-label fw-bold">Наименование изделия <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="name" name="name" required 
+                   placeholder="Например: Атмосферный дрон v2">
+          </div>
+
+          <div class="mb-3">
+            <label for="status" class="form-label fw-bold">Статус жизненного цикла</label>
+            <select class="form-select" id="status" name="status">
+              <option value="design" selected>🔧 Разработка (design)</option>
+              <option value="production">🏭 Производство (production)</option>
+              <option value="testing">🔬 Испытания (testing)</option>
+              <option value="accepted">✅ Принято (accepted)</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="notes" class="form-label fw-bold">Примечания</label>
+            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                      placeholder="Особые требования, ссылка на КД, комментарий конструктора..."></textarea>
+          </div>
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg">💾 Создать изделие</button>
+            <a href="/assets" class="btn btn-outline-secondary">↩️ Отмена</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

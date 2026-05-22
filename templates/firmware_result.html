@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Паспорт ПО{% endblock %}
+{% block page_title %}💾 Цифровой паспорт ПО{% endblock %}
+{% block breadcrumb %}Изделия / Верификация ПО / Результат{% endblock %}
+{% block topbar_actions %}
+  <a href="/product/{{ product_id }}/firmware_passport/{{ log_id }}" class="btn btn-dl">📄 Паспорт .docx</a>
+  <a href="/product/{{ product_id }}/firmware_simulate" class="btn btn-outline">↩ Новая проверка</a>
+  <a href="/assets/{{ product_id }}" class="btn btn-outline">← К изделию</a>
+{% endblock %}
+
+{% block content %}
+<div class="{% if compatible %}verdict verdict-ok{% else %}verdict verdict-fail{% endif %}">
+  {% if compatible %}
+    ✅ ПРОШИВКА СОВМЕСТИМА С АППАРАТНОЙ ПЛАТФОРМОЙ
+  {% else %}
+    ❌ ПРОШИВКА НЕСОВМЕСТИМА — ВЫДАЧА В ПРОИЗВОДСТВО ЗАБЛОКИРОВАНА
+  {% endif %}
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Результат верификации</span></div>
+    <table>
+      <tr><td style="color:#6b7280">Компонент</td><td><strong>{{ comp.name }}</strong></td></tr>
+      <tr><td style="color:#6b7280">Тип контроллера</td><td><code>{{ comp.controller_type }}</code></td></tr>
+      <tr><td style="color:#6b7280">Ревизия HW</td><td>{{ comp.hardware_revision }}</td></tr>
+      <tr><td style="color:#6b7280">Версия FW</td><td><code>{{ fw_version }}</code></td></tr>
+      <tr><td style="color:#6b7280">SHA-256</td><td style="font-size:11px;word-break:break-all"><code>{{ fw_hash[:32] }}...</code></td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Цифровой паспорт ПО (JSON)</span></div>
+    <pre style="background:#1e293b;color:#e2e8f0;padding:12px;border-radius:6px;font-size:11px;overflow:auto;max-height:200px">{{ passport }}</pre>
+    <div class="mt-3">
+      <a href="/product/{{ product_id }}/firmware_passport/{{ log_id }}" class="btn btn-dl" style="width:100%;justify-content:center">
+        📄 Скачать паспорт Word (.docx)
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

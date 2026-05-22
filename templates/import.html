@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}Импорт и экспорт данных — ЕИС SpaceQuest{% endblock %}
+{% block page_title %}Импорт и экспорт данных{% endblock %}
+{% block breadcrumb %}Главная / Документы / Интеграция{% endblock %}
+
+{% block content %}
+
+{% if message %}
+  <div class="alert alert-info alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+{% endif %}
+
+<div class="row g-4">
+  <!-- 📥 ИМПОРТ ДАННЫХ -->
+  <div class="col-lg-6">
+    <div class="card h-100 border-start border-4 border-primary">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 fw-bold">Импорт данных</h5>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">
+          Загрузите файл JSON с данными изделий. Формат файла должен соответствовать структуре:
+        </p>
+        <pre class="bg-light p-2 rounded small mb-3"><code>{
+  "products": [
+    {
+      "serial_number": "SPC-004",
+      "name": "Новое изделие",
+      "status": "design",
+      "within_tolerance": true
+    }
+  ]
+}</code></pre>
+        
+        <form method="POST" action="/import" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label for="import_file" class="form-label">Выберите файл JSON</label>
+            <input type="file" class="form-control" id="import_file" name="file" accept=".json" required>
+            <div class="form-text">Допустимы только файлы .json</div>
+          </div>
+          <button type="submit" class="btn btn-primary w-50">
+            Загрузить и импортировать
+          </button>
+        </form>
+
+        <hr class="my-4">
+        
+        <h6 class="fw-bold mb-3"> Синхронизация с внешними системами</h6>
+        <div class="d-grid gap-2">
+          <button class="btn btn-outline-secondary btn-sm" title="T-FLEX PLM">
+            🔗 T-FLEX PLM (изделия и спецификации)
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" title="SolidWorks">
+            🔗 SolidWorks (3D-модели и масса)
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" title="Git репозиторий">
+            🔗 Git (версии прошивок)
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" title="1C:ERP">
+            🔗 1C:ERP (склад и комплектующие)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📤 ЭКСПОРТ ДАННЫХ С ФИЛЬТРАМИ -->
+  <div class="col-lg-6">
+    <div class="card h-100 border-start border-4 border-success">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 fw-bold">Экспорт данных</h5>
+      </div>
+      <div class="card-body">
+        <form id="exportForm">
+          <h6 class="fw-bold mb-3">Фильтры экспорта</h6>
+          
+          <div class="mb-3">
+            <label class="form-label">Тип данных для экспорта</label>
+            <select class="form-select" id="exportType" required>
+              <option value="">Выберите тип...</option>
+              <option value="products">Все изделия</option>
+              <option value="components">Компоненты и узлы</option>
+              <option value="mass_logs">Массо-инерционные характеристики</option>
+              <option value="firmware_logs">Версии бортового ПО</option>
+              <option value="test_runs">Результаты испытаний</option>
+              <option value="full_report">Полный отчёт по изделию</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Статус изделия</label>
+            <select class="form-select" id="filterStatus">
+              <option value="">Все статусы</option>
+              <option value="design">Проектирование</option>
+              <option value="production">Производство</option>
+              <option value="testing">Испытания</option>
+              <option value="accepted">✅ Принято</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Соответствие допускам</label>
+            <select class="form-select" id="filterTolerance">
+              <option value="">Все</option>
+              <option value="ok">✓ В пределах допуска</option>
+              <option value="violation">✗ Нарушение</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Период</label>
+            <div class="row g-2">
+              <div class="col">
+                <input type="date" class="form-control" id="dateFrom" placeholder="С">
+              </div>
+              <div class="col">
+                <input type="date" class="form-control" id="dateTo" placeholder="По">
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Формат экспорта</label>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="exportFormat" id="formatJSON" value="json" checked>
+              <label class="form-check-label" for="formatJSON">JSON (для импорта в другие системы)</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="exportFormat" id="formatXML" value="xml">
+              <label class="form-check-label" for="formatXML">XML (обмен с PLM)</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="exportFormat" id="formatCSV" value="csv">
+              <label class="form-check-label" for="formatCSV">CSV (Excel, таблицы)</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="exportFormat" id="formatPDF" value="pdf">
+              <label class="form-check-label" for="formatPDF">PDF (отчёт)</label>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-success w-50">
+            Экспортировать данные
+          </button>
+        </form>
+
+        <hr class="my-4">
+        
+        <h6 class="fw-bold mb-3">Быстрый экспорт</h6>
+        <div class="d-grid gap-2">
+          <a href="/export/registry" class="btn btn-outline-primary btn-sm">
+            Реестр всех изделий (Excel)
+          </a>
+          <a href="/export/mass_summary" class="btn btn-outline-warning btn-sm">
+            Сводка по массе (PDF)
+          </a>
+          <a href="/export/firmware_matrix" class="btn btn-outline-info btn-sm">
+            Матрица совместимости ПО (JSON)
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 📊 ИСТОРИЯ ОПЕРАЦИЙ -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 fw-bold">📜 История импорта/экспорта</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover table-sm">
+            <thead>
+              <tr>
+                <th>Дата</th>
+                <th>Операция</th>
+                <th>Тип данных</th>
+                <th>Записей</th>
+                <th>Пользователь</th>
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>08.05.2026 14:30</td>
+                <td>📥 Импорт</td>
+                <td>Изделия из T-FLEX</td>
+                <td>15</td>
+                <td>Иванов А.П.</td>
+                <td><span class="badge bg-success">Успешно</span></td>
+              </tr>
+              <tr>
+                <td>08.05.2026 12:15</td>
+                <td>📤 Экспорт</td>
+                <td>Реестр изделий</td>
+                <td>42</td>
+                <td>Петрова В.С.</td>
+                <td><span class="badge bg-success">Успешно</span></td>
+              </tr>
+              <tr>
+                <td>07.05.2026 16:45</td>
+                <td>📥 Импорт</td>
+                <td>Прошивки из Git</td>
+                <td>8</td>
+                <td>Сидоров М.К.</td>
+                <td><span class="badge bg-warning">Частично</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 🔧 ШАБЛОНЫ И КОНФИГУРАЦИИ -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 fw-bold">⚙️ Настройки интеграции</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="card border">
+              <div class="card-body">
+                <h6 class="card-title fw-bold">T-FLEX PLM</h6>
+                <p class="card-text small text-muted">
+                  API: https://plm.spacequest.ru/api<br>
+                  Статус: <span class="text-success">● Подключено</span>
+                </p>
+                <button class="btn btn-sm btn-outline-primary">Проверить связь</button>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card border">
+              <div class="card-body">
+                <h6 class="card-title fw-bold">Git Repository</h6>
+                <p class="card-text small text-muted">
+                  URL: https://git.spacequest.ru<br>
+                  Статус: <span class="text-success">● Подключено</span>
+                </p>
+                <button class="btn btn-sm btn-outline-primary">Синхронизировать</button>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card border">
+              <div class="card-body">
+                <h6 class="card-title fw-bold">1C:ERP</h6>
+                <p class="card-text small text-muted">
+                  API: http://1c-erp:8080<br>
+                  Статус: <span class="text-danger">● Не подключено</span>
+                </p>
+                <button class="btn btn-sm btn-outline-secondary">Настроить</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('exportForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const exportData = {
+    type: document.getElementById('exportType').value,
+    status: document.getElementById('filterStatus').value,
+    tolerance: document.getElementById('filterTolerance').value,
+    dateFrom: document.getElementById('dateFrom').value,
+    dateTo: document.getElementById('dateTo').value,
+    format: document.querySelector('input[name="exportFormat"]:checked').value
+  };
+  
+  if (!exportData.type) {
+    alert('Пожалуйста, выберите тип данных для экспорта');
+    return;
+  }
+  
+  // Здесь будет логика отправки на сервер
+  console.log('Экспорт данных:', exportData);
+  
+  // Пример: создание blob и скачивание
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `export_${exportData.type}_${new Date().toISOString().split('T')[0]}.${exportData.format}`;
+  a.click();
+  
+  alert('Данные экспортированы успешно!');
+});
+
+// Обработка выбора типа экспорта
+document.getElementById('exportType').addEventListener('change', function() {
+  const type = this.value;
+  const statusSelect = document.getElementById('filterStatus');
+  
+  // Динамическое изменение доступных фильтров в зависимости от типа
+  if (type === 'mass_logs') {
+    statusSelect.disabled = true;
+  } else {
+    statusSelect.disabled = false;
+  }
+});
+</script>
+{% endblock %}

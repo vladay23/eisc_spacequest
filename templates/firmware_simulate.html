@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Верификация ПО — {{ product.name }}{% endblock %}
+{% block page_title %}💾 Подсистема 2: Бортовое ПО{% endblock %}
+{% block breadcrumb %}Изделия / {{ product.serial_number }} / Верификация ПО{% endblock %}
+{% block topbar_actions %}
+  <a href="/assets/{{ product.id }}" class="btn btn-outline">← К изделию</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header"><span class="card-title">Верификация прошивки компонента</span></div>
+  <div class="alert alert-info">
+    <strong>Изделие:</strong> {{ product.name }} &nbsp;|&nbsp; <strong>С/Н:</strong> {{ product.serial_number }}
+  </div>
+  <form method="post" action="/product/{{ product.id }}/firmware_simulate">
+    <div class="grid-2">
+      <div>
+        <div class="form-group">
+          <label>Компонент</label>
+          <select name="component_id" id="comp_select" onchange="updateVersions(this.value)">
+            {% if not components %}
+              <option value="">— нет компонентов —</option>
+            {% endif %}
+            {% for c in components %}
+            <option value="{{ c.id }}">{{ c.name }} ({{ c.controller_type }}, HW Rev {{ c.hardware_revision }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Версия прошивки</label>
+          <select name="firmware_version" id="fw_version">
+            <option value="1.0">1.0</option>
+            <option value="1.1">1.1</option>
+            <option value="1.8">1.8</option>
+            <option value="2.0">2.0</option>
+            <option value="2.1">2.1</option>
+            <option value="2.9">2.9</option>
+            <option value="3.0">3.0</option>
+          </select>
+          <div class="form-hint" id="compat_hint"></div>
+        </div>
+        <div class="form-group">
+          <label>SHA-256 хэш прошивки (опционально)</label>
+          <input type="text" name="hash" placeholder="Оставьте пустым — хэш будет сгенерирован автоматически">
+        </div>
+      </div>
+      <div>
+        <div class="card" style="background:#f8fafc;border:1px solid #e2e8f0">
+          <div class="card-title" style="margin-bottom:12px">📊 Матрица совместимости</div>
+          <div id="matrix_info" style="font-size:13px;color:#6b7280">
+            Выберите компонент, чтобы увидеть матрицу
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if not components %}
+    <div class="alert alert-warn">
+      ⚠️ У изделия нет компонентов.
+      <a href="/assets/{{ product.id }}/components/new" class="btn btn-outline btn-sm" style="margin-left:8px">➕ Добавить компонент</a>
+    </div>
+    {% else %}
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">💾 Верифицировать прошивку</button>
+    {% endif %}
+  </form>
+</div>
+
+<script>
+const matrix = {{ matrix_versions|safe }};
+
+function updateVersions(compId) {
+  const versions = matrix[compId] || [];
+  const sel = document.getElementById('fw_version');
+  sel.innerHTML = '';
+  if (versions.length === 0) {
+    sel.innerHTML = '<option value="">— нет данных в матрице —</option>';
+    document.getElementById('matrix_info').innerHTML = 'Нет данных в матрице совместимости';
+    return;
+  }
+  versions.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v.version;
+    opt.text = v.version + (v.compatible ? ' ✓' : ' ✗ несовм.');
+    sel.appendChild(opt);
+  });
+  updateHint();
+  updateMatrix(versions);
+}
+
+function updateHint() {
+  const sel = document.getElementById('fw_version');
+  const hint = document.getElementById('compat_hint');
+  const opt = sel.options[sel.selectedIndex];
+  if (opt) {
+    hint.textContent = opt.text.includes('✓') ? '✓ Эта версия совместима' : '✗ Эта версия НЕ совместима';
+    hint.style.color = opt.text.includes('✓') ? '#065f46' : '#991b1b';
+  }
+}
+
+function updateMatrix(versions) {
+  const info = document.getElementById('matrix_info');
+  let html = '<table style="width:100%;font-size:12px"><thead><tr><th style="text-align:left;padding:4px">Версия</th><th style="text-align:left;padding:4px">Статус</th></tr></thead><tbody>';
+  versions.forEach(v => {
+    const bg = v.compatible ? '#d1fae5' : '#fee2e2';
+    const clr = v.compatible ? '#065f46' : '#991b1b';
+    html += `<tr style="background:${bg}"><td style="padding:4px"><code>${v.version}</code></td><td style="padding:4px;color:${clr}">${v.compatible ? '✓ Совместима' : '✗ Несовместима'}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  info.innerHTML = html;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const sel = document.getElementById('comp_select');
+  if (sel && sel.value) { updateVersions(sel.value); }
+  const fw = document.getElementById('fw_version');
+  if (fw) fw.addEventListener('change', updateHint);
+});
+</script>
+{% endblock %}

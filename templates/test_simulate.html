@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Испытание — {{ product.name }}{% endblock %}
+{% block page_title %}Управление испытаниями{% endblock %}
+{% block breadcrumb %}Главная / Испытания{% endblock %}
+{% block topbar_actions %}
+  <a href="/assets/{{ product.id }}" class="btn btn-outline">← К изделию</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header"><span class="card-title">Запуск испытательного сценария</span></div>
+  <div class="alert alert-info">
+    <strong>Изделие:</strong> {{ product.name }} &nbsp;|&nbsp; <strong>С/Н:</strong> {{ product.serial_number }}&nbsp;|&nbsp;
+    <strong>Статус:</strong> <span class="badge badge-{{ product.status }}">{{ product.status }}</span>
+  </div>
+  <form method="post" action="/product/{{ product.id }}/test_simulate">
+    <div class="form-group">
+      <label>Сценарий испытаний</label>
+      <select name="scenario_id">
+        {% for s in scenarios %}
+        <option value="{{ s.id }}">{{ s.name }} — {{ s.description or 'без описания' }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="alert alert-warn">
+      ⚙️ Система сгенерирует 8 точек телеметрии для каждого параметра сценария.<br>
+      При успешном прохождении всех допусков изделие переводится в статус «accepted».
+    </div>
+    <button type="submit" class="btn btn-success" style="width:100%;justify-content:center;font-size:15px;padding:12px">
+      🚀 Запустить испытание
+    </button>
+  </form>
+</div>
+{% endblock %}

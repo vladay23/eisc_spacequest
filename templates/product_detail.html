@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} — ЕИС SpaceQuest{% endblock %}
+{% block page_title %}{{ product.name }}{% endblock %}
+{% block breadcrumb %}Изделия / Изделие{% endblock %}
+{% block topbar_actions %}
+  <a href="/product/{{ product.id }}/summary_report" class="btn btn-dl">Сводный отчёт .docx</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Характеристики изделия</span></div>
+    <table>
+      <tr><td style="color:#6b7280;width:40%">Серийный номер</td><td><strong>{{ product.serial_number }}</strong></td></tr>
+      <tr><td style="color:#6b7280">Статус</td><td><span class="badge badge-{{ product.status }}">{{ product.status }}</span></td></tr>
+      <tr><td style="color:#6b7280">Масса, кг</td><td>{% if product.mass_kg %}{{ "%.4f"|format(product.mass_kg) }}{% else %}—{% endif %}</td></tr>
+      <tr><td style="color:#6b7280">ЦМ (X, Y, Z)</td>
+          <td>{% if product.cg_x is not none %}{{ "%.4f"|format(product.cg_x) }}, {{ "%.4f"|format(product.cg_y) }}, {{ "%.4f"|format(product.cg_z) }}{% else %}—{% endif %}</td></tr>
+      <tr><td style="color:#6b7280">Допуск по массе</td>
+          <td>{% if product.within_tolerance %}<span class="badge badge-ok">✓ В норме</span>{% else %}<span class="badge badge-fail">✗ Нарушение</span>{% endif %}</td></tr>
+    </table>
+    {% if product.notes %}
+    <div class="alert alert-info mt-3"> {{ product.notes }}</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Компоненты ({{ components|length }})</span>
+        <form action="/assets/import" method="post" style="display: inline;">
+    <button type="submit" class="btn btn-secondary">
+      <i class="bi bi-database-down"></i> Обновить
+    </button>
+  </form>
+    </div>
+    {% if components %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Компонент</th><th>Тип</th><th>HW Rev</th><th>FW Ver</th></tr></thead>
+        <tbody>
+          {% for c in components %}
+          <tr>
+            <td>{{ c.name }}</td>
+            <td><code>{{ c.controller_type }}</code></td>
+            <td>{{ c.hardware_revision }}</td>
+            <td>{% if c.firmware_version %}<code>{{ c.firmware_version }}</code>{% else %}<span style="color:#9ca3af">—</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#9ca3af;text-align:center;padding:20px">Компоненты не добавлены</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Подсистемы -->
+<div class="grid-3">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Управление компоновкой</span></div>
+    <p style="font-size:12px;color:#6b7280;margin-bottom:12px">Расчёт массово-инерционных характеристик с проверкой допусков</p>
+    {% if mass_logs %}
+    <div class="alert alert-info" style="font-size:12px">
+      Последняя проверка: {{ mass_logs[0].checked_at.strftime('%d.%m.%Y %H:%M') if mass_logs[0].checked_at else '—' }}<br>
+      Масса: {{ "%.3f"|format(mass_logs[0].mass_kg) }} кг &nbsp;
+      {% if mass_logs[0].within_tolerance %}<span style="color:#065f46">✓ В норме</span>{% else %}<span style="color:#991b1b">✗ Нарушение</span>{% endif %}
+    </div>
+    {% endif %}
+    <a href="/product/{{ product.id }}/mass_simulate" class="btn btn-primary" style="width:100%;justify-content:center">Рассчитать МИХ</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Проверка версий</span></div>
+    <p style="font-size:12px;color:#6b7280;margin-bottom:12px">Верификация прошивок, цифровые паспорта ПО</p>
+    {% if compatibility_logs %}
+    <div class="alert {% if compatibility_logs[0].compatible %}alert-success{% else %}alert-danger{% endif %}" style="font-size:12px">
+      Последняя проверка: {{ compatibility_logs[0].checked_at.strftime('%d.%m.%Y %H:%M') if compatibility_logs[0].checked_at else '—' }}<br>
+      {% if compatibility_logs[0].compatible %}✓ Совместима{% else %}✗ Несовместима{% endif %}
+    </div>
+    {% endif %}
+    <a href="/product/{{ product.id }}/firmware_simulate" class="btn btn-primary" style="width:100%;justify-content:center">Верифицировать ПО</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Испытания</span></div>
+    <p style="font-size:12px;color:#6b7280;margin-bottom:12px">Запуск испытательных сценариев, телеметрия, акты</p>
+    {% if tests %}
+    <div class="alert {% if tests[0].status == 'passed' %}alert-success{% elif tests[0].status == 'failed' %}alert-danger{% else %}alert-warn{% endif %}" style="font-size:12px">
+      Последний прогон: {{ tests[0].started_at.strftime('%d.%m.%Y %H:%M') if tests[0].started_at else '—' }}<br>
+      Статус: <strong>{{ tests[0].status.upper() }}</strong>
+    </div>
+    {% endif %}
+    <a href="/product/{{ product.id }}/test_simulate" class="btn btn-primary" style="width:100%;justify-content:center">Запустить испытание</a>
+  </div>
+</div>
+
+<!-- История испытаний -->
+{% if tests %}
+<div class="card">
+  <div class="card-header"><span class="card-title">История испытаний</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Дата</th><th>Сценарий</th><th>Статус</th><th>Завершено</th><th>Документ</th></tr></thead>
+      <tbody>
+        {% for t in tests %}
+        <tr>
+          <td>{{ t.started_at.strftime('%d.%m.%Y %H:%M') if t.started_at else '—' }}</td>
+          <td>{{ t.scenario.name if t.scenario else '—' }}</td>
+          <td><span class="badge badge-{{ t.status }}">{{ t.status }}</span></td>
+          <td>{{ t.finished_at.strftime('%H:%M:%S') if t.finished_at else '—' }}</td>
+          <td>
+            <a href="/product/{{ product.id }}/test_act_latest" class="btn btn-dl btn-sm">Акт .docx</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- История прошивок -->
+{% if compatibility_logs %}
+<div class="card">
+  <div class="card-header"><span class="card-title">История верификации ПО</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Дата</th><th>Компонент</th><th>Совместимость</th><th>Документ</th></tr></thead>
+      <tbody>
+        {% for l in compatibility_logs %}
+        <tr>
+          <td>{{ l.checked_at.strftime('%d.%m.%Y %H:%M') if l.checked_at else '—' }}</td>
+          <td>{{ l.component.name if l.component else '—' }}</td>
+          <td>
+            {% if l.compatible %}<span class="badge badge-ok">✓ Совместима</span>
+            {% else %}<span class="badge badge-fail">✗ Несовместима</span>{% endif %}
+          </td>
+          <td>
+            <a href="/product/{{ product.id }}/summary_report" class="btn btn-dl btn-sm">Паспорт .docx</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- История расчётов массы -->
+{% if mass_logs %}
+<div class="card">
+  <div class="card-header"><span class="card-title">История расчётов МИХ</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Дата</th><th>Масса, кг</th><th>ЦМ X</th><th>ЦМ Y</th><th>ЦМ Z</th><th>Статус</th><th>Документ</th></tr></thead>
+      <tbody>
+        {% for ml in mass_logs %}
+        <tr>
+          <td>{{ ml.checked_at.strftime('%d.%m.%Y %H:%M') if ml.checked_at else '—' }}</td>
+          <td>{{ "%.3f"|format(ml.mass_kg) }}</td>
+          <td>{{ "%.4f"|format(ml.cg_x) }}</td>
+          <td>{{ "%.4f"|format(ml.cg_y) }}</td>
+          <td>{{ "%.4f"|format(ml.cg_z) }}</td>
+          <td>
+            {% if ml.within_tolerance %}<span class="badge badge-ok">✓ Норма</span>
+            {% else %}<span class="badge badge-fail">✗ Нарушение</span>{% endif %}
+          </td>
+          <td>
+            <a href="/product/{{ product.id }}/mass_report/{{ ml.id }}" class="btn btn-dl btn-sm">Отчёт .docx</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

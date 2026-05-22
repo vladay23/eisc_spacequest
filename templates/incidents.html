@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Инциденты — ЕИС SpaceQuest{% endblock %}
+
+{% block page_title %}Инциденты и отклонения{% endblock %}
+{% block breadcrumb %}Главная / Производство и Изделия / Инциденты{% endblock %}
+{% block topbar_actions %}
+<a href="#" class="btn btn-outline-secondary" onclick="window.print(); return false;" title="Распечатать журнал инцидентов">
+  <i class="bi bi-printer"></i> Печать PDF
+</a>
+<a href="/incidents/print" class="btn btn-outline-secondary" title="Скачать журнал инцидентов в DOCX">
+  <i class="bi bi-file-earmark-word"></i> Печать DOCX
+</a>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="stat-grid">
+  <div class="stat-card info">
+    <div class="stat-label">Проблемы с ПО</div>
+    <h2 class="display-6 fw-bold text-success mb-0">{{ firmware_incidents|length }}</h2>
+      <p class="card-text text-muted text-center">Несовместимых прошивок</p>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Отклонения по массе</div>
+    <h2 class="display-6 fw-bold text-success mb-0">{{ mass_incidents|length }}</h2>
+    <p class="card-text text-muted text-center">Изделий вне допуска</p>
+    </div>
+  <div class="stat-card">
+    <div class="stat-label">Проваленные испытания</div>
+    <h2 class="display-6 fw-bold text-info mb-0">{{ mass_incidents|length }}</h2>
+    <p class="card-text text-muted text-center">Тестов не пройдено</p>
+  </div>
+</div>
+
+
+<!-- 🔧 Инциденты совместимости ПО -->
+<div class="card mb-4">
+  <div class="card-header bg-danger text-white">
+    Несовместимость прошивок с компонентами
+  </div>
+  <div class="card-body">
+    {% if firmware_incidents %}
+    <div class="table-responsive">
+      <table class="table table-hover table-sm">
+        <thead>
+          <tr>
+            <th>Изделие</th>
+            <th>Компонент</th>
+            <th>Версия ПО</th>
+            <th>Ревизия железа</th>
+            <th>Проверено</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in firmware_incidents %}
+          <tr class="table-danger">
+            <td>
+              <strong>{{ log.product.serial_number }}</strong><br>
+              <small class="text-muted">{{ log.product.name }}</small>
+            </td>
+            <td>
+              {{ log.component.name }}<br>
+              <small class="text-muted">Тип: {{ log.component.controller_type }}</small>
+            </td>
+            <td><code>{{ log.component.firmware_version or "—" }}</code></td>
+            <td><code>{{ log.component.hardware_revision }}</code></td>
+            <td>
+              <small>{{ log.checked_at.strftime('%d.%m.%Y %H:%M') if log.checked_at else "—" }}</small>
+            </td>
+            <td>
+              <a href="/assets/{{ log.product_id }}" class="btn btn-sm btn-outline-primary" title="Карточка изделия">
+                <i class="bi bi-eye" style="font-size: 1.15rem;"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="alert alert-success">
+      ✅ Все прошивки совместимы с установленным оборудованием.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ⚖️ Отклонения по массе и ЦМ -->
+<div class="card mb-4">
+  <div class="card-header bg-warning text-dark">
+    Изделия с отклонениями по массе / центру масс
+  </div>
+  <div class="card-body">
+    {% if mass_incidents %}
+    <div class="table-responsive">
+      <table class="table table-hover table-sm">
+        <thead>
+          <tr>
+            <th>Изделие</th>
+            <th>Масса, кг</th>
+            <th>ЦМ (X, Y, Z)</th>
+            <th>Материал</th>
+            <th>Проверено</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in mass_incidents %}
+          <tr class="table-warning">
+            <td>
+              <strong>{{ log.product.serial_number }}</strong><br>
+              <small class="text-muted">{{ log.product.name }}</small>
+            </td>
+            <td>
+              <strong>{{ "%.3f"|format(log.mass_kg) if log.mass_kg else "—" }}</strong>
+              {% if log.mass_kg %}
+                <br><small class="text-muted">
+                  {% if log.mass_kg < 28.5 %}↓ Ниже нормы{% elif log.mass_kg > 31.5 %}↑ Выше нормы{% endif %}
+                </small>
+              {% endif %}
+            </td>
+            <td>
+              <small>
+                X: {{ "%.2f"|format(log.cg_x) if log.cg_x else "—" }}<br>
+                Y: {{ "%.2f"|format(log.cg_y) if log.cg_y else "—" }}<br>
+                Z: {{ "%.2f"|format(log.cg_z) if log.cg_z else "—" }}
+              </small>
+            </td>
+            <td>{{ log.material or "—" }}</td>
+            <td>
+              <small>{{ log.checked_at.strftime('%d.%m.%Y %H:%M') if log.checked_at else "—" }}</small>
+            </td>
+            <td>
+              <a href="/product/{{ log.product_id }}/mass_simulate" class="btn btn-sm btn-outline-warning" title="Пересчёт массы/ЦМ">
+                <i class="bi bi-calculator" style="font-size: 1.15rem;"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="alert alert-success">
+      ✅ Все изделия в пределах допусков по массе и центру масс.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- 🔬 Проваленные испытания -->
+<div class="card mb-4">
+  <div class="card-header bg-info text-white">
+    Испытания со статусом «Не пройдено»
+  </div>
+  <div class="card-body">
+    {% if test_failures %}
+    <div class="table-responsive">
+      <table class="table table-hover table-sm">
+        <thead>
+          <tr>
+            <th>Изделие</th>
+            <th>Сценарий</th>
+            <th>Начало</th>
+            <th>Окончание</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for test in test_failures %}
+          <tr class="table-info">
+            <td>
+              <strong>{{ test.product.serial_number }}</strong><br>
+              <small class="text-muted">{{ test.product.name }}</small>
+            </td>
+            <td>{{ test.scenario.name }}</td>
+            <td><small>{{ test.started_at.strftime('%d.%m %H:%M') if test.started_at else "—" }}</small></td>
+            <td><small>{{ test.finished_at.strftime('%d.%m %H:%M') if test.finished_at else "—" }}</small></td>
+            
+            <td>
+            <div class="btn-group btn-group-sm" role="group">
+  {% if test.report_path %}
+    <a href="{{ test.report_path }}" class="btn btn-outline-secondary" title="Скачать отчёт" download>
+      <i class="bi bi-file-earmark-text" style="font-size: 1.15rem;"></i>
+    </a>
+  {% else %}
+    <button class="btn btn-outline-secondary" disabled title="Отчёт отсутствует">
+      <i class="bi bi-file-earmark-text" style="font-size: 1.15rem;"></i>
+    </button>
+  {% endif %}
+  <a href="/product/{{ test.product_id }}/test_simulate" class="btn btn-outline-info" title="Повторный запуск">
+    <i class="bi bi-arrow-repeat" style="font-size: 1.15rem;"></i>
+  </a>
+  <a href="/assets/{{ test.product_id }}" class="btn btn-outline-primary" title="Карточка изделия">
+    <i class="bi bi-eye" style="font-size: 1.15rem;"></i>
+  </a>
+</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="alert alert-success">
+      ✅ Все испытания пройдены успешно.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Подсветка критических строк при загрузке
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.table-danger, .table-warning, .table-info').forEach(row => {
+      row.classList.add('fade-in');
+    });
+  });
+</script>
+<style>
+  .fade-in { animation: fadeIn 0.3s ease-in; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+{% endblock %}

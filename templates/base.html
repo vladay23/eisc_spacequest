@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+  <title>{% block title %}ЕИС SpaceQuest{% endblock %}</title>
+  <style>
+    :root {
+      --navy: #0d1b2a;
+      --navy2: #1b2e45;
+      --blue: #1a56db;
+      --blue-lt: #3b82f6;
+      --accent: #f59e0b;
+      --green: #10b981;
+      --red: #ef4444;
+      --gray: #6b7280;
+      --gray-lt: #f3f4f6;
+      --white: #ffffff;
+      --sidebar-w: 240px;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px;
+           color: #1f2937; background: #f0f4f8; display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w); background: var(--navy); color: #cbd5e1;
+      display: flex; flex-direction: column; position: fixed; top: 0; left: 0;
+      height: 100vh; z-index: 100; overflow-y: auto;
+    }
+    .sidebar-logo {
+      padding: 20px 16px 12px; border-bottom: 1px solid #243554;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sidebar-logo .logo-icon {
+      width: 36px; height: 36px; background: var(--blue); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .sidebar-logo .logo-text { font-size: 13px; }
+    .sidebar-logo .logo-text strong { color: white; display: block; font-size: 15px; }
+
+    .sidebar nav { padding: 12px 0; flex: 1; }
+    .nav-section { padding: 8px 16px 4px; font-size: 10px; font-weight: 700;
+                   letter-spacing: 1px; color: #4b6080; text-transform: uppercase; }
+    .sidebar a {
+      display: flex; align-items: center; gap: 10px; padding: 9px 16px;
+      color: #94a3b8; text-decoration: none; font-size: 13px; border-radius: 0;
+      transition: all .15s;
+    }
+    .sidebar a:hover, .sidebar a.active {
+      background: var(--navy2); color: white;
+    }
+    .sidebar a.active { border-left: 3px solid var(--blue-lt); }
+    .sidebar a .icon { font-size: 16px; width: 20px; text-align: center; }
+
+    .sidebar-footer {
+      padding: 12px 16px; border-top: 1px solid #243554; font-size: 11px; color: #4b6080;
+    }
+
+    /* ── Main ── */
+    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar {
+      background: white; border-bottom: 1px solid #e5e7eb;
+      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar h1 { font-size: 18px; font-weight: 600; color: #111827; }
+    .topbar .breadcrumb { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+    .topbar .actions { display: flex; gap: 8px; }
+
+    .content { padding: 24px; flex: 1; }
+
+    /* ── Cards ── */
+    .card {
+      background: white; border-radius: var(--radius); border: 1px solid #e5e7eb;
+      padding: 20px; margin-bottom: 16px;
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f3f4f6;
+    }
+    .card-title { font-size: 15px; font-weight: 600; color: #111827; }
+
+    /* ── Stat grid ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: white; border-radius: var(--radius); border: 1px solid #e5e7eb;
+      padding: 16px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .stat-label { font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+    .stat-value { font-size: 28px; font-weight: 700; color: #111827; }
+    .stat-card.danger { border-left: 3px solid var(--red); }
+    .stat-card.success { border-left: 3px solid var(--green); }
+    .stat-card.warn { border-left: 3px solid var(--accent); }
+    .stat-card.info { border-left: 3px solid var(--blue); }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 12px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px;
+    }
+    .badge-design { background: #dbeafe; color: #1e40af; }
+    .badge-production { background: #fef3c7; color: #92400e; }
+    .badge-testing { background: #ede9fe; color: #5b21b6; }
+    .badge-accepted { background: #d1fae5; color: #065f46; }
+    .badge-ok { background: #d1fae5; color: #065f46; }
+    .badge-fail { background: #fee2e2; color: #991b1b; }
+    .badge-passed { background: #d1fae5; color: #065f46; }
+    .badge-failed { background: #fee2e2; color: #991b1b; }
+    .badge-running { background: #fef9c3; color: #854d0e; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px;
+      border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;
+      border: none; text-decoration: none; transition: all .15s; white-space: nowrap;
+    }
+    .btn-primary { background: var(--blue); color: white; }
+    .btn-primary:hover { background: #1346b8; }
+    .btn-success { background: var(--green); color: white; }
+    .btn-success:hover { background: #059669; }
+    .btn-danger { background: var(--red); color: white; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-outline { background: white; color: #374151; border: 1px solid #d1d5db; }
+    .btn-outline:hover { background: #f9fafb; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .btn-dl { background: #0d1b2a; color: white; }
+    .btn-dl:hover { background: #1b2e45; }
+    .btn-warn { background: var(--accent); color: white; }
+    .btn-warn:hover { background: #d97706; }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: var(--navy); color: white; padding: 10px 12px; text-align: left;
+         font-weight: 600; font-size: 12px; }
+    td { padding: 9px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    tr:hover td { background: #f9fafb; }
+
+    /* ── Forms ── */
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; }
+    input[type=text], input[type=number], input[type=file], select, textarea {
+      width: 100%; padding: 8px 12px; border: 1px solid #d1d5db;
+      border-radius: 6px; font-size: 13px; transition: border .15s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--blue-lt); box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+    }
+    .form-hint { font-size: 11px; color: #9ca3af; margin-top: 3px; }
+
+    /* ── Alerts ── */
+    .alert {
+      padding: 12px 16px; border-radius: 6px; font-size: 13px; margin-bottom: 16px;
+      display: flex; align-items: flex-start; gap: 8px;
+    }
+    .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    .alert-danger  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .alert-warn    { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+    .alert-info    { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+
+    /* ── Grid helpers ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .flex { display: flex; }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; }
+    .gap-2 { gap: 8px; }
+    .mt-2 { margin-top: 8px; }
+    .mt-3 { margin-top: 16px; }
+
+    /* ── Verdict block ── */
+    .verdict {
+      padding: 20px; border-radius: 8px; text-align: center;
+      font-size: 18px; font-weight: 700; margin: 20px 0;
+    }
+    .verdict-ok { background: #d1fae5; color: #065f46; border: 2px solid #10b981; }
+    .verdict-fail { background: #fee2e2; color: #991b1b; border: 2px solid #ef4444; }
+
+    /* ── Telemetry progress ── */
+    .tele-bar {
+      height: 6px; border-radius: 3px; background: #e5e7eb; overflow: hidden; margin-top: 4px;
+    }
+    .tele-bar-fill { height: 100%; border-radius: 3px; }
+    .tele-ok .tele-bar-fill { background: var(--green); }
+    .tele-fail .tele-bar-fill { background: var(--red); }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .main { margin-left: 0; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+    .logo-icon {
+      display: inline-flex;
+      align-items: center;
+      ustify-content: center;
+      font-size: 50px; /* Базовый размер, как у обычного текста/эмодзи */
+  }
+
+.logo-img {
+  width: 2.5em;      /* Ровно 1em = размер текущего шрифта */
+  height: 2.5em;
+  object-fit: contain; /* Сохраняет пропорции, не растягивая */
+  vertical-align: middle;
+}
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <img src="/static/image.png" alt="Логотип" class="logo-img">
+    </div>
+    <div class="logo-text">
+      <strong>SpaceQuest</strong>
+      ЕИС v1.0
+    </div>
+  </div>
+  <nav>
+    <div class="nav-section">Главное</div>
+    <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">
+      <span class="icon"></span> Начальная страница
+    </a>
+
+    <div class="nav-section">Производство и Изделия</div>
+    <a href="/assets" class="{% if '/assets' in request.url.path and 'simulate' not in request.url.path %}active{% endif %}">
+      <span class="icon"></span> Реестр изделий
+    </a>
+    <a href="/incidents" class="{% if '/incidents' in request.url.path %}active{% endif %}">
+      <span class="icon"></span> Инциденты
+    </a>
+
+    <div class="nav-section">Аналитика</div>
+    <a href="/analytics" class="{% if '/analytics' in request.url.path %}active{% endif %}">
+      <span class="icon"></span> Аналитика
+    </a>
+
+    <div class="nav-section">Документы и ИНтеграция</div>
+    <a href="/templates" class="{% if '/templates' in request.url.path %}active{% endif %}">
+      <span class="icon"></span> Документы
+    </a>
+    <a href="/import" class="{% if '/import' in request.url.path %}active{% endif %}">
+      <span class="icon"></span> Интеграция
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    АО «SpaceQuest» © 2026<br>
+    Кафедра ПИ и ИБ РЭУ
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <h1>{% block page_title %}ЕИС SpaceQuest{% endblock %}</h1>
+      <div class="breadcrumb">{% block breadcrumb %}Главная{% endblock %}</div>
+    </div>
+    <div class="actions">{% block topbar_actions %}{% endblock %}</div>
+  </div>
+
+  <div class="content">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+</body>
+</html>

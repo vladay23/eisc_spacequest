@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Изделия — ЕИС SpaceQuest{% endblock %}
+{% block page_title %}Изделия{% endblock %}
+{% block breadcrumb %}Главная / Изделия{% endblock %}
+{% block topbar_actions %}
+  <form action="/assets/import" method="post" style="display: inline;">
+    <button type="submit" class="btn btn-secondary">
+      <i class="bi bi-database-down"></i> Обновить
+    </button>
+  </form>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">Все изделия ({{ products|length }})</div>
+  <div class="card-body">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>С/Н</th><th>Наименование</th><th>Статус</th>
+          <th>Масса, кг</th><th>Допуск</th><th>Примечание</th><th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td>{{ p.serial_number }}</td>
+          <td>{{ p.name }}</td>
+          <td>{{ p.status }}</td>
+          <td>{{ "%.3f"|format(p.mass_kg) if p.mass_kg else "—" }}</td>
+          <td>
+            {% if p.within_tolerance %}
+              <span class="badge badge-ok">В норме</span>
+            {% else %}
+              <span class="badge badge-fail">Нарушение</span>
+            {% endif %}
+          </td>
+          <td>{{ p.notes or "—" }}</td>
+          <td class="text-nowrap">
+  <div class="btn-group btn-group-sm" role="group">
+    <a href="/assets/{{ p.id }}" class="btn btn-outline-primary" title="Просмотр">
+      <i class="bi bi-eye" style="font-size: 1.15rem;"></i>
+    </a>
+    <a href="/product/{{ p.id }}/mass_simulate" class="btn btn-outline-secondary" title="Симуляция массы">
+      <i class="bi bi-calculator" style="font-size: 1.15rem;"></i>
+    </a>
+    <a href="/product/{{ p.id }}/firmware_simulate" class="btn btn-outline-info" title="Симуляция прошивки">
+      <i class="bi bi-memory" style="font-size: 1.15rem;"></i>
+    </a>
+    <a href="/product/{{ p.id }}/test_simulate" class="btn btn-outline-warning" title="Симуляция тестов">
+      <i class="bi bi-bug" style="font-size: 1.15rem;"></i>
+    </a>
+  </div>
+</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
