@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block title %}Аналитика — ЕИС SpaceQuest{% endblock %}
+{% block page_title %}Аналитика и статистика{% endblock %}
+{% block breadcrumb %}Главная / Аналитика{% endblock %}
+{% block topbar_actions %}
+<a href="#" class="btn btn-outline-secondary" onclick="window.print(); return false;" title="Скачать отчёт в формате PDF">
+  <i class="bi bi-printer"></i> Печать PDF
+</a>
+<a href="/analytics/print" class="btn btn-outline-secondary" title="Скачать отчёт в формате DOCX">
+  <i class="bi bi-file-earmark-word"></i> Печать DOCX
+</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="container" style="display: flex; height: 100vh;">
+  <div class="left-side" style="flex: 4.5; background: padding: 20px;">
+    <!-- 📊 Сводные карточки -->
+    <div class="stat-grid mb-4">
+      <div class="stat-card info">
+        <div class="stat-label">Всего изделий</div>
+        <div class="stat-value">{{ total_products }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Успешных испытаний</div>
+        <h2 class="display-6 fw-bold text-success mb-0">{{ passed_tests }}</h2>
+        {% if passed_tests + failed_tests > 0 %}
+          <small class="text-muted">{{ "%.1f"|format(passed_tests / (passed_tests + failed_tests) * 100) }}% от общего числа</small>
+        {% endif %}
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Совместимость ПО</div>
+        <h2 class="display-6 fw-bold text-info mb-0">{{ compatibility_ok }}</h2>
+        {% if compatibility_ok + compatibility_issues > 0 %}
+          <small class="text-muted">{{ "%.1f"|format(compatibility_ok / (compatibility_ok + compatibility_issues) * 100) }}% проверенных компонентов</small>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Карточки с детальной статистикой (две колонки) -->
+    <div class="row g-4">
+      <!-- ⚖️ Масса и компоновка -->
+      <div class="col-lg-6">
+        <div class="card h-100 {% if out_of_tol > 0 %}border-warning bg-warning bg-opacity-10{% endif %}">
+          <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
+            Массо-инерционные характеристики
+            <span class="badge {% if out_of_tol > 0 %}bg-warning{% else %}bg-success{% endif %}">
+              {% if out_of_tol > 0 %}Требует внимания{% else %}В норме{% endif %}
+            </span>
+          </div>
+          <div class="card-body">
+            <table class="table table-borderless align-middle mb-3">
+              <thead>
+                <tr class="border-bottom text-muted small text-uppercase">
+                  <th class="ps-0">Параметр</th>
+                  <th class="text-end">Количество</th>
+                  <th class="text-end pe-0">Доля</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-bottom">
+                  <td class="ps-0">В пределах допуска</td>
+                  <td class="text-end fw-medium">{{ in_tol }}</td>
+                  <td class="text-end pe-0 text-muted">
+                    {% set total = in_tol + out_of_tol %}
+                    {% if total > 0 %}{{ (in_tol / total * 100)|int }}%{% else %}—{% endif %}
+                  </td>
+                </tr>
+                <tr class="border-bottom">
+                  <td class="ps-0">Вне допуска</td>
+                  <td class="text-end fw-medium {% if out_of_tol > 0 %}text-danger{% endif %}">{{ out_of_tol }}</td>
+                  <td class="text-end pe-0 {% if out_of_tol > 0 %}text-danger{% endif %}">
+                    {% set total = in_tol + out_of_tol %}
+                    {% if total > 0 %}{{ (out_of_tol / total * 100)|int }}%{% else %}—{% endif %}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            {% if out_of_tol > 0 %}
+              <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; gap: 8px; font-size: 0.875rem;">
+                <span style="font-size: 1rem;"></span>
+                <span>Выявлены отклонения. Требуется корректировка массы или положения ЦМ.</span>
+              </div>
+            {% else %}
+              <div class="d-flex align-items-center gap-2 text-success small">
+                <span>✅</span> Показатели соответствуют техническим требованиям.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- 🔬 Испытания -->
+      <div class="col-lg-6">
+        <div class="card h-100 {% if failed_tests > 0 %}border-danger bg-danger bg-opacity-10{% endif %}">
+          <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
+            Результаты испытаний
+            <span class="badge {% if failed_tests > 0 %}bg-danger{% else %}bg-success{% endif %}">
+              {% if failed_tests > 0 %}Есть отказы{% else %}Все пройдены{% endif %}
+            </span>
+          </div>
+          <div class="card-body">
+            <table class="table table-borderless align-middle mb-3">
+              <thead>
+                <tr class="border-bottom text-muted small text-uppercase">
+                  <th class="ps-0">Параметр</th>
+                  <th class="text-end">Количество</th>
+                  <th class="text-end pe-0">Доля</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-bottom">
+                  <td class="ps-0">Пройдено успешно</td>
+                  <td class="text-end fw-medium">{{ passed_tests }}</td>
+                  <td class="text-end pe-0 text-muted">
+                    {% set total = passed_tests + failed_tests %}
+                    {% if total > 0 %}{{ (passed_tests / total * 100)|int }}%{% else %}—{% endif %}
+                  </td>
+                </tr>
+                <tr class="border-bottom">
+                  <td class="ps-0">Не пройдено</td>
+                  <td class="text-end fw-medium {% if failed_tests > 0 %}text-danger{% endif %}">{{ failed_tests }}</td>
+                  <td class="text-end pe-0 {% if failed_tests > 0 %}text-danger{% endif %}">
+                    {% set total = passed_tests + failed_tests %}
+                    {% if total > 0 %}{{ (failed_tests / total * 100)|int }}%{% else %}—{% endif %}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            {% if failed_tests > 0 %}
+              <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; gap: 8px; font-size: 0.875rem;">
+                <span style="font-size: 1rem;"></span>
+                <span>Зафиксированы отказы. Требуется анализ телеметрии.</span>
+              </div>
+            {% else %}
+              <div class="d-flex align-items-center gap-2 text-success small">
+                <span>✅</span> Все проведённые испытания успешно завершены.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- 🔌 Совместимость ПО -->
+      <div class="col-lg-6">
+        <div class="card h-100">
+          <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
+            Совместимость бортового ПО
+            <span class="badge {% if compatibility_issues > 0 %}bg-warning{% else %}bg-success{% endif %}">
+              {% if compatibility_issues > 0 %}Несовместимо{% else %}В норме{% endif %}
+            </span>
+          </div>
+          <div class="card-body">
+            <table class="table table-borderless align-middle mb-3">
+              <thead>
+                <tr class="border-bottom text-muted small text-uppercase">
+                  <th class="ps-0">Параметр</th>
+                  <th class="text-end">Количество</th>
+                  <th class="text-end pe-0">Доля</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-bottom">
+                  <td class="ps-0">Совместимо</td>
+                  <td class="text-end fw-medium">{{ compatibility_ok }}</td>
+                  <td class="text-end pe-0 text-muted">
+                    {% set total = compatibility_ok + compatibility_issues %}
+                    {% if total > 0 %}{{ (compatibility_ok / total * 100)|int }}%{% else %}—{% endif %}
+                  </td>
+                </tr>
+                <tr class="border-bottom">
+                  <td class="ps-0">Несовместимо</td>
+                  <td class="text-end fw-medium {% if compatibility_issues > 0 %}text-danger{% endif %}">{{ compatibility_issues }}</td>
+                  <td class="text-end pe-0 {% if compatibility_issues > 0 %}text-danger{% endif %}">
+                    {% set total = compatibility_ok + compatibility_issues %}
+                    {% if total > 0 %}{{ (compatibility_issues / total * 100)|int }}%{% else %}—{% endif %}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            {% if compatibility_issues > 0 %}
+              <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; gap: 8px; font-size: 0.875rem;">
+                <span style="font-size: 1rem;"></span>
+                <span>Выявлены конфликты версий. Блокировка выдачи в производство.</span>
+              </div>
+            {% else %}
+              <div class="d-flex align-items-center gap-2 text-success small">
+                <span>✅</span> Все конфигурации ПО соответствуют аппаратным ревизиям.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- 📈 Сводка и действия -->
+      <div class="col-lg-6">
+        <div class="card h-100">
+          <div class="card-header bg-light fw-bold">Общая готовность и рекомендации</div>
+          <div class="card-body">
+            {% set total_checks = (in_tol + out_of_tol) + (passed_tests + failed_tests) + (compatibility_ok + compatibility_issues) %}
+            {% set passed_checks = in_tol + passed_tests + compatibility_ok %}
+            {% if total_checks > 0 %}
+              {% set readiness = (passed_checks / total_checks * 100)|int %}
+            {% else %}
+              {% set readiness = 0 %}
+            {% endif %}
+
+            <table class="table table-borderless align-middle mb-3">
+              <thead>
+                <tr class="border-bottom text-muted small text-uppercase">
+                  <th class="ps-0">Показатель</th>
+                  <th class="text-end">Значение</th>
+                  <th class="text-end pe-0">Оценка</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-bottom">
+                  <td class="ps-0">Индекс готовности</td>
+                  <td class="text-end fw-medium {% if readiness >= 80 %}text-success{% elif readiness >= 50 %}text-warning{% else %}text-danger{% endif %}">{{ readiness }}%</td>
+                  <td class="text-end pe-0 text-muted">
+                    {% if readiness >= 80 %}Высокий{% elif readiness >= 50 %}Средний{% else %}Низкий{% endif %}
+                  </td>
+                </tr>
+                <tr class="border-bottom">
+                  <td class="ps-0">Успешных проверок</td>
+                  <td class="text-end fw-medium">{{ passed_checks }}</td>
+                  <td class="text-end pe-0 text-muted">из {{ total_checks }}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="d-flex align-items-center gap-2 {% if readiness < 100 %}text-warning{% else %}text-success{% endif %} small mb-3">
+              
+              <span>
+                {% if readiness < 100 %}
+                  <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; gap: 8px; font-size: 0.875rem;">
+                    <span style="font-size: 1rem;"></span>
+                    <span>Требуется устранение замечаний перед переходом на следующий этап ЖЦ.</span>
+                  </div>
+                {% else %}
+                  Изделие полностью готово к передаче заказчику.
+                {% endif %}
+              </span>
+            </div>
+
+            
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ПРАВАЯ КОЛОНКА – ФИЛЬТР (sticky) -->
+  <div class="right-side" style="flex: 2; padding: 20px;">
+    <div class="card border">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+        <div class="fw-bold text-uppercase small tracking-wide">Сортировать</div>
+        <div>
+          <button class="btn btn-sm btn-outline-secondary" id="dropdownFilterBtn" title="Сохранённые фильтры">
+            <i class="bi bi-chevron-down"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-primary" id="saveFilterBtn">
+            <i class="bi bi-save"></i> Сохранить
+          </button>
+        </div>
+      </div>
+      <div class="card-body pt-0">
+        <form id="filter-form" method="get" action="/analytics">
+          <table class="table table-borderless table-sm mt-3">
+            <thead>
+              <tr class="text-muted small text-uppercase border-bottom">
+                <th style="width: 35%">Параметр</th>
+                <th style="width: 65%">Значение</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Дата создания -->
+              <tr>
+                <td class="align-middle">Дата создания</td>
+                <td class="align-middle">
+                  <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <label class="small text-muted me-1">с</label>
+                    <input type="date" class="form-control form-control-sm" name="date_from" value="{{ date_from }}" style="width: 130px;" onchange="this.form.submit()">
+                    <label class="small text-muted ms-2 me-1">по</label>
+                    <input type="date" class="form-control form-control-sm" name="date_to" value="{{ date_to }}" style="width: 130px;" onchange="this.form.submit()">
+                  </div>
+                </td>
+              </tr>
+              <!-- Статус -->
+              <tr>
+                <td class="align-middle">Статус</td>
+                <td class="align-middle">
+                  <select class="form-select form-select-sm" name="status" onchange="this.form.submit()">
+                    <option value="">Все</option>
+                    <option value="design" {% if status == 'design' %}selected{% endif %}>Проектирование</option>
+                    <option value="production" {% if status == 'production' %}selected{% endif %}>Производство</option>
+                    <option value="testing" {% if status == 'testing' %}selected{% endif %}>Испытания</option>
+                  </select>
+                </td>
+              </tr>
+              <!-- Отклонение -->
+              <tr>
+                <td class="align-middle">Отклонение</td>
+                <td class="align-middle">
+                  <select class="form-select form-select-sm" name="issue_type" onchange="this.form.submit()">
+                    <option value="">Все</option>
+                    <option value="mass" {% if issue_type == 'mass' %}selected{% endif %}>Отклонения по массе</option>
+                    <option value="test" {% if issue_type == 'test' %}selected{% endif %}>Проваленные испытания</option>
+                    <option value="firmware" {% if issue_type == 'firmware' %}selected{% endif %}>Несовместимость ПО</option>
+                  </select>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="mt-2">
+            <button type="button" class="btn btn-link text-primary text-decoration-none p-0" id="addFilterRowBtn">
+              <i class="bi bi-plus-circle"></i> Добавить
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Сохранение фильтров
+    document.getElementById('saveFilterBtn')?.addEventListener('click', function(e) {
+      e.preventDefault();
+      const form = document.getElementById('filter-form');
+      const formData = new FormData(form);
+      const filters = {};
+      for (let [key, value] of formData.entries()) {
+        if (value) filters[key] = value;
+      }
+      localStorage.setItem('savedAnalyticsFilters', JSON.stringify(filters));
+      alert('Фильтры сохранены!');
+    });
+
+    // Загрузка сохранённого фильтра
+    document.getElementById('dropdownFilterBtn')?.addEventListener('click', function(e) {
+      e.preventDefault();
+      const saved = localStorage.getItem('savedAnalyticsFilters');
+      if (!saved) {
+        alert('Нет сохранённых фильтров. Сначала сохраните фильтр через кнопку СОХРАНИТЬ.');
+        return;
+      }
+      const filters = JSON.parse(saved);
+      for (let [key, value] of Object.entries(filters)) {
+        const input = document.querySelector(`[name="${key}"]`);
+        if (input) input.value = value;
+      }
+      document.getElementById('filter-form').submit();
+    });
+
+    // Кнопка "Добавить"
+    document.getElementById('addFilterRowBtn')?.addEventListener('click', function() {
+      alert('Функция добавления новых условий пока не реализована.');
+    });
+  });
+</script>
+{% endblock %}
